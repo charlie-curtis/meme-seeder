@@ -26,8 +26,8 @@ pip install -e .
 # Full pipeline with Ollama (must be running locally)
 meme-seeder run --limit 50
 
-# Full pipeline with Claude API (better quality)
-ANTHROPIC_API_KEY=sk-ant-... meme-seeder run --backend claude --limit 50
+# Full pipeline with Claude CLI — requires `claude` to be installed and logged in
+meme-seeder run --backend claude --limit 50
 
 # Skip KYM scraping (faster, fewer LLM context tokens)
 meme-seeder run --skip-kym --limit 100

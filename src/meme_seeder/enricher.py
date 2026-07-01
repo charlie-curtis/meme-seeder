@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
@@ -16,7 +17,6 @@ class EnricherConfig(BaseModel):
     backend: Literal["ollama", "claude"] = "ollama"
     model: str = "llama3.2:3b"
     ollama_url: str = "http://127.0.0.1:11434"
-    claude_api_key: str | None = None
     timeout_seconds: int = 60
 
 
@@ -68,15 +68,13 @@ def _call_ollama(prompt: str, config: EnricherConfig) -> str:
 
 
 def _call_claude(prompt: str, config: EnricherConfig) -> str:
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=config.claude_api_key)
-    message = client.messages.create(
-        model=config.model,
-        max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return message.content[0].text
+    args = ["claude", "-p", prompt]
+    if config.model:
+        args += ["--model", config.model]
+    result = subprocess.run(args, capture_output=True, text=True, timeout=config.timeout_seconds)
+    if result.returncode != 0:
+        raise RuntimeError(f"claude -p failed: {result.stderr.strip()}")
+    return result.stdout
 
 
 def enrich(raw: RawTemplate, config: EnricherConfig) -> EnrichedTemplate:

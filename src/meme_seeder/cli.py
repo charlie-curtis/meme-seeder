@@ -1,6 +1,4 @@
 import argparse
-import os
-import sys
 
 from rich.console import Console
 
@@ -36,7 +34,7 @@ def main() -> None:
     )
     run_parser.add_argument(
         "--model",
-        help="Model name (default: llama3.2:3b for ollama, claude-sonnet-4-6 for claude)"
+        help="Model name (default: llama3.2:3b for ollama; omit to use claude's default for claude backend)"
     )
     run_parser.add_argument(
         "--ollama-url", default="http://127.0.0.1:11434",
@@ -46,20 +44,12 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "run":
-        model = args.model
-        if model is None:
-            model = "claude-sonnet-4-6" if args.backend == "claude" else "llama3.2:3b"
-
-        claude_api_key = os.environ.get("ANTHROPIC_API_KEY") if args.backend == "claude" else None
-        if args.backend == "claude" and not claude_api_key:
-            console.print("[red]Error:[/] ANTHROPIC_API_KEY environment variable is required for --backend claude")
-            sys.exit(1)
+        model = args.model or ("" if args.backend == "claude" else "llama3.2:3b")
 
         config = EnricherConfig(
             backend=args.backend,
             model=model,
             ollama_url=args.ollama_url,
-            claude_api_key=claude_api_key,
         )
 
         run_pipeline(

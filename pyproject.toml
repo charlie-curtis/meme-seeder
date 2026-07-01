@@ -12,7 +12,6 @@ dependencies = [
     "pydantic>=2.8",
     "beautifulsoup4>=4.12",
     "rich>=13.0",
-    "anthropic>=0.40",
 ]
 
 [project.optional-dependencies]
