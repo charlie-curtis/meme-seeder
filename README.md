@@ -1,6 +1,6 @@
 # meme-seeder
 
-Scraper and LLM enricher for seeding the [you-get-a-meme](../you-get-a-meme) template database.
+Scraper and LLM enricher for seeding the [you-get-a-meme](https://github.com/charlie-curtis/you-get-a-meme) template database.
 
 The quality of meme search and caption generation in you-get-a-meme depends entirely on the richness of template metadata. This repo provides the pipeline to fetch, enrich, and curate that metadata at scale.
 
@@ -13,41 +13,62 @@ Know Your Meme       →  cultural context: origin, how it's used in the wild
        ↓
 LLM enrichment       →  description, caption_pattern, box_labels, tags
        ↓
-data/output/templates.txt   (INI format, drop-in for you-get-a-meme)
+data/output/templates.txt + data/images/
 ```
 
 Intermediate results are cached in `data/raw/` and `data/enriched/`, so re-runs only process new or changed templates.
 
-## Quickstart
+## Full workflow
 
 ```bash
+# 1. Install
 pip install -e .
 
-# Full pipeline with Ollama (must be running locally)
-meme-seeder run --limit 50
-
-# Full pipeline with Claude CLI — requires `claude` to be installed and logged in
+# 2. Scrape + enrich (Claude CLI backend — must be logged in)
 meme-seeder run --backend claude --limit 50
 
-# Skip KYM scraping (faster, fewer LLM context tokens)
-meme-seeder run --skip-kym --limit 100
+# 3. Download template images from Imgflip
+meme-seeder download-images
 
-# Force re-enrichment of already-cached templates
-meme-seeder run --force-reenrich --backend claude
+# 4. Copy templates.txt and images into you-get-a-meme
+meme-seeder install
+
+# 5. Rebuild embeddings in you-get-a-meme
+cd ../you-get-a-meme && .venv/bin/python -m you_get_a_meme.embeddings
 ```
 
-## Options
+## Commands
+
+### `meme-seeder run`
+
+Scrape Imgflip + Know Your Meme, enrich with LLM, write `data/output/templates.txt`.
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--limit N` | 50 | Max templates to fetch from Imgflip |
 | `--backend` | `ollama` | LLM backend: `ollama` or `claude` |
-| `--model` | `llama3.2:3b` / `claude-sonnet-4-6` | Model override |
+| `--model` | `llama3.2:3b` | Model override |
 | `--ollama-url` | `http://127.0.0.1:11434` | Ollama base URL |
-| `--skip-kym` | off | Skip Know Your Meme scraping |
+| `--skip-kym` | off | Skip Know Your Meme scraping (faster) |
 | `--force-reenrich` | off | Re-enrich even if cached |
 
-## Template Schema
+### `meme-seeder download-images`
+
+Downloads each template image from Imgflip into `data/images/`. Reads from the existing `data/enriched/` cache — no re-enrichment needed.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--force` | off | Re-download even if already cached |
+
+### `meme-seeder install`
+
+Copies `data/output/templates.txt` and `data/images/` into the you-get-a-meme repo.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dest PATH` | `../you-get-a-meme` | Path to you-get-a-meme repo |
+
+## Template schema
 
 ```ini
 [template-id]
@@ -57,35 +78,28 @@ caption_pattern = Instructions for filling each text box, in order
 box_labels = label for box 1, label for box 2
 tags = keyword1, keyword2, keyword3
 box_count = 2
+image_url = https://i.imgflip.com/...
 ```
 
-The `description` and `tags` fields feed the embedding model for semantic search. The `caption_pattern` and `box_labels` feed the caption-generation LLM.
+`description` and `tags` feed the embedding model for semantic search. `caption_pattern` and `box_labels` guide the caption-generation LLM. `image_url` is the Imgflip source used by `download-images`.
 
 ## Prompts
 
-`prompts/enrich_template.md` — the main enrichment prompt. Edit this to improve output quality. It uses three placeholders: `{{name}}`, `{{box_count}}`, `{{context_block}}`.
+`prompts/enrich_template.md` — the main enrichment prompt. Uses placeholders `{{name}}`, `{{box_count}}`, `{{context_block}}`. Edit this to improve output quality.
 
-`prompts/validate_template.md` — scores existing templates on description quality, caption pattern clarity, box label accuracy, and tag coverage. Useful for auditing the output after a run.
+`prompts/validate_template.md` — scores existing templates on description quality, caption pattern clarity, box label accuracy, and tag coverage. Useful for auditing after a run.
 
-## Data Layout
+## Data layout
 
 ```
 data/
-  raw/
-    imgflip.json          # Full response from Imgflip API
-    kym_{id}.json         # Cached KYM pages per template
-  enriched/
-    {id}.json             # LLM-enriched template (one file per template)
+  raw/                        # gitignored — scraped source data
+    imgflip.json
+    kym_{id}.json
+  enriched/                   # gitignored — LLM output cache (one file per template)
+    {id}.json
+  images/                     # gitignored — downloaded template images
+    {id}.jpg / {id}.png
   output/
-    templates.txt         # Final output — committed, copy to you-get-a-meme
-```
-
-`data/raw/` and `data/enriched/` are gitignored. `data/output/templates.txt` is committed and is the deliverable.
-
-## Copying to you-get-a-meme
-
-```bash
-cp data/output/templates.txt ../you-get-a-meme/data/templates.txt
-cd ../you-get-a-meme
-you-get-a-meme-build-embeddings  # Rebuild embedding cache
+    templates.txt             # committed — the deliverable
 ```
