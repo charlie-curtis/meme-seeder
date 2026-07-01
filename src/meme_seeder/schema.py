@@ -55,4 +55,5 @@ class EnrichedTemplate(BaseModel):
             f"box_labels = {', '.join(self.box_labels)}",
             f"tags = {', '.join(self.tags)}",
             f"box_count = {self.box_count}",
+            f"image_url = {self.image_url}",
         ])
