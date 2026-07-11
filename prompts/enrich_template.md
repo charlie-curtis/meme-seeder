@@ -19,14 +19,16 @@ Generate metadata for this template. The metadata serves two purposes:
 
 ## Output
 
-Return a JSON object with exactly these four fields:
+Return a JSON object with exactly these six fields:
 
 ```json
 {
   "description": "...",
   "caption_pattern": "...",
   "box_labels": ["...", "..."],
-  "tags": ["...", "..."]
+  "tags": ["...", "..."],
+  "tone": "...",
+  "notes": "..."
 }
 ```
 
@@ -67,6 +69,8 @@ Rules:
 ### `box_labels`
 Short labels (1–4 words each) for each box, in the exact order they appear in the meme image. These appear in the UI and are passed directly to the caption-generation LLM.
 
+**IMPORTANT — verify the box count yourself.** The box count provided above comes from Imgflip and is sometimes wrong. Common failure: the template image has text baked in (e.g. "0 DAYS WITHOUT" with the 0 already printed, "Marked safe from ___" with the frame pre-filled) but Imgflip still counts it as a fillable box. Only list boxes the user actually fills. The final box count will be `len(box_labels)` — your label list is the source of truth.
+
 Examples:
 - `["rejected option", "approved option"]`
 - `["boyfriend", "girlfriend", "distraction"]`
@@ -83,6 +87,22 @@ Examples:
 - **Synonyms:** multiple ways a user might describe the same scenario
 
 Good tag coverage means "choosing between" and "indecision" and "impossible choice" all hit the same template.
+
+---
+
+### `tone`
+One word for the meme's dominant register: `humorous`, `ironic`, `sarcastic`, `absurdist`, `sincere`, `self-deprecating`, or `passive-aggressive`.
+
+Memes are primarily used to be funny — but the *kind* of funny matters for caption generation. "This Is Fine" is ironic cope; "Disaster Girl" is smug dark humor; "Epic Handshake" can be used sincerely. If a meme has both a sincere and an ironic usage, pick the one that dominates in the wild today (ironic usually wins).
+
+---
+
+### `notes`
+One to three sentences of caption-writer guidance that doesn't fit the other fields:
+- Text baked into the image (things the user must NOT re-supply)
+- Panels that intentionally stay blank (e.g. Anakin's silent smile panel IS the punchline — adding text breaks it)
+- Common misuse to avoid
+- Whether a box is almost always a fixed phrase (e.g. box 2 of "Always Has Been" is nearly always just "Always has been.")
 
 ---
 

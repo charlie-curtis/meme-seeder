@@ -14,6 +14,9 @@ HEADER = """\
 #   box_labels     — comma-separated labels, one per text box (in order)
 #   tags           — comma-separated keywords
 #   box_count      — number of text boxes in the template image
+#   image_url      — Imgflip source image
+#   tone           — dominant register (humorous, ironic, sarcastic, ...)
+#   notes          — caption-writer guidance: baked-in text, blank panels, common misuse
 """
 
 

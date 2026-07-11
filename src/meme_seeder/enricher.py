@@ -87,9 +87,9 @@ def enrich(raw: RawTemplate, config: EnricherConfig) -> EnrichedTemplate:
 
     fields = _parse_response(text)
 
-    # Validate box_labels length matches box_count
-    if len(fields.box_labels) != raw.imgflip.box_count:
-        fields.box_labels = _fix_box_labels(fields.box_labels, raw.imgflip.box_count)
+    # Trust the LLM's box_labels: Imgflip's box_count is sometimes wrong when the
+    # template image has text baked in (e.g. "0 days without", "marked safe from").
+    box_count = len(fields.box_labels) if fields.box_labels else raw.imgflip.box_count
 
     return EnrichedTemplate(
         id=raw.imgflip.id,
@@ -98,15 +98,10 @@ def enrich(raw: RawTemplate, config: EnricherConfig) -> EnrichedTemplate:
         caption_pattern=fields.caption_pattern,
         box_labels=fields.box_labels,
         tags=fields.tags,
-        box_count=raw.imgflip.box_count,
+        box_count=box_count,
         image_url=raw.imgflip.url,
         enriched_at=datetime.now(timezone.utc),
         enrichment_model=f"{config.backend}/{config.model}",
+        tone=fields.tone,
+        notes=fields.notes,
     )
-
-
-def _fix_box_labels(labels: list[str], expected: int) -> list[str]:
-    """Pad or truncate box_labels to match expected box count."""
-    if len(labels) < expected:
-        labels = labels + [f"box {i + 1}" for i in range(len(labels), expected)]
-    return labels[:expected]

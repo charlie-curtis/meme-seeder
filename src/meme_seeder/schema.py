@@ -32,6 +32,8 @@ class EnrichedFields(BaseModel):
     caption_pattern: str
     box_labels: list[str]
     tags: list[str]
+    tone: str = ""
+    notes: str = ""
 
 
 class EnrichedTemplate(BaseModel):
@@ -45,9 +47,11 @@ class EnrichedTemplate(BaseModel):
     image_url: str
     enriched_at: datetime
     enrichment_model: str
+    tone: str = ""
+    notes: str = ""
 
     def to_ini_section(self) -> str:
-        return "\n".join([
+        lines = [
             f"[{self.id}]",
             f"name = {self.name}",
             f"description = {self.description}",
@@ -56,4 +60,9 @@ class EnrichedTemplate(BaseModel):
             f"tags = {', '.join(self.tags)}",
             f"box_count = {self.box_count}",
             f"image_url = {self.image_url}",
-        ])
+        ]
+        if self.tone:
+            lines.append(f"tone = {self.tone}")
+        if self.notes:
+            lines.append(f"notes = {self.notes}")
+        return "\n".join(lines)
